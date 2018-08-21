@@ -14,7 +14,7 @@ int main(void) {
 	char filesha256[65];
 	StrSHA256("wenchaolei", sizeof(text) - 1, strsha256);
 	puts(strsha256);
-	FileSHA256("test_file.txt", filesha256);
+	FileSHA256("test_sha.txt", filesha256);
 	puts(filesha256);
 	// system("pause");
 	return 0;
