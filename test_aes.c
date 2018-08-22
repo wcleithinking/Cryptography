@@ -7,7 +7,7 @@
 #include "aes.h"
 
 int main(void) {
-	byte mbyte[16], cbyte[16], key[16],newmbyte[16];
+	byte mbyte[16], cbyte[16], key[16],newmbyte[16], eqnewmbyte[16];
 	for (int i = 0; i < 16; i++) {
 		mbyte[i] = ((byte)i<<4) | ( (byte)i);
 		key[i] = (byte)i;
@@ -28,6 +28,9 @@ int main(void) {
 	printf("INVERSE CIPHER (DECRYPT):\n");
 	aes128_decrypt(cbyte, newmbyte, key);
 	printf("\n");
-	system("pause");
+	printf("EQUIVALENT INVERSE CIPHER (DECRYPT):\n");
+	aes128_eqdecrypt(cbyte, eqnewmbyte, key);
+	printf("\n");
+	//system("pause");
 	return 0;
 }

@@ -67,8 +67,10 @@ static const byte InvaMix[4][4] = {
 
 void aes128_encrypt(byte mblock[4 * Nb], byte cblock[4 * Nb], byte key[4 * Nk]);
 void aes128_decrypt(byte cblock[4 * Nb], byte mblock[4 * Nb], byte key[4 * Nk]);
+void aes128_eqdecrypt(byte cblock[4 * Nb], byte mblock[4 * Nb], byte key[4 * Nk]);
 
 void KeyExpansion(byte key[4 * Nk], word w[Nb*(Nr + 1)]);
+void EqKeyExpansion(byte key[4 * Nk], word dw[Nb*(Nr + 1)]);
 word RotWord(word a);
 word SubWord(word a);
 
@@ -79,6 +81,7 @@ void MixColumns(byte state[4][Nb]);
 void AddRoundKey(byte state[4][Nb], word w[Nb*(Nr + 1)], int round);
 
 void InvCipher(byte in[4 * Nb], byte out[4 * Nb], word w[Nb*(Nr + 1)]);
+void EqInvCipher(byte in[4 * Nb], byte out[4 * Nb], word w[Nb*(Nr + 1)]);
 void InvShiftRows(byte state[4][Nb]);
 void InvSubBytes(byte state[4][Nb]);
 void InvMixColumns(byte state[4][Nb]);

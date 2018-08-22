@@ -24,7 +24,13 @@ void aes128_decrypt(byte cblock[4 * Nb], byte mblock[4 * Nb], byte key[4 * Nk]) 
 	InvCipher(cblock, mblock, w);
 }
 
-void KeyExpansion(byte key[4 * Nk], word w[Nb*(Nr+1)]) {
+void aes128_eqdecrypt(byte cblock[4 * Nb], byte mblock[4 * Nb], byte key[4 * Nk]) {
+	word dw[Nb*(Nr + 1)];
+	EqKeyExpansion(key, dw);
+	EqInvCipher(cblock, mblock, dw);
+}
+
+void KeyExpansion(byte key[4 * Nk], word w[Nb*(Nr + 1)]) {
 	word temp;
 	int i = 0;
 	while (i < Nk) {
@@ -43,6 +49,46 @@ void KeyExpansion(byte key[4 * Nk], word w[Nb*(Nr+1)]) {
 		//}
 		w[i] = w[i - Nk] ^ temp;
 		i++;
+	}
+}
+
+void EqKeyExpansion(byte key[4 * Nk], word dw[Nb*(Nr+1)]) {
+	word temp;
+	word w[Nb*(Nr + 1)];
+	byte dwmatrix[4][Nb];
+	byte b[4];
+	int i = 0;
+	while (i < Nk) {
+		w[i] = getWordFromByte(key[4 * i], key[4 * i + 1], key[4 * i + 2], key[4 * i + 3]);
+		i++;
+	}
+	i = Nk;
+	while (i < Nb*(Nr + 1)) {
+		temp = w[i - 1];
+		if (i%Nk == 0) {
+			temp = SubWord(RotWord(temp)) ^ Rcon[i / Nk - 1];
+		}
+		//// for AES-256 where Nk = 8, see Page 19 of FIPS-197
+		//else if ((Nk > 6) && (i%Nk == 4)) {
+		//	temp = SubWord(temp);
+		//}
+		w[i] = w[i - Nk] ^ temp;
+		i++;
+	}
+	for (i = 0; i < Nb*(Nr + 1); i++) {
+		dw[i] = w[i];
+	}
+	for (int round = 1; round < Nr; round++) {
+		for (int c = 0; c < Nb; c++) {
+			getByteFromWord(dw[round*Nb + c], b);
+			for (int r = 0; r < 4; r++) {
+				dwmatrix[r][c] = b[r];
+			}
+		}
+		InvMixColumns(dwmatrix);
+		for (int c = 0; c < Nb; c++) {
+			dw[round*Nb + c] = getWordFromByte(dwmatrix[0][c], dwmatrix[1][c], dwmatrix[2][c], dwmatrix[3][c]);
+		}
 	}
 }
 
@@ -197,6 +243,52 @@ void InvCipher(byte in[4 * Nb], byte out[4 * Nb], word w[Nb*(Nr + 1)]) {
 		out[i] = state[i % 4][i / 4];
 	}
 }
+
+void EqInvCipher(byte in[4 * Nb], byte out[4 * Nb], word dw[Nb*(Nr + 1)]) {
+	byte state[4][Nb];
+	int round = Nr;
+	printf("round[%2d].iinput   ", Nr - round);
+	showarray(in);
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < Nb; j++) {
+			state[i][j] = in[i + 4 * j];
+		}
+	}
+	printf("round[%2d].ik_sch   ", Nr - round);
+	showkey(dw[round*Nb + 0], dw[round*Nb + 1], dw[round*Nb + 2], dw[round*Nb + 3]);
+	AddRoundKey(state, dw, round);
+	for (round = Nr - 1; round >= 0; round--) {
+		// Start
+		printf("round[%2d].istart   ", Nr - round);
+		showstate(state);
+		// InvSubBytes
+		InvSubBytes(state);
+		printf("round[%2d].is_box   ", Nr - round);
+		showstate(state);
+		// InvShiftRows
+		InvShiftRows(state);
+		printf("round[%2d].is_row   ", Nr - round);
+		showstate(state);
+		if (round > 0) {
+			// InvMixColumns
+			InvMixColumns(state);
+			printf("round[%2d].im_col   ", Nr - round);
+			showstate(state);
+		}
+		// AddRoundKey
+		printf("round[%2d].ik_sch   ", Nr - round);
+		showkey(dw[round*Nb + 0], dw[round*Nb + 1], dw[round*Nb + 2], dw[round*Nb + 3]);
+		AddRoundKey(state, dw, round);
+		if (round == 0) {
+			printf("round[%2d].ioutput  ", Nr - round);
+			showstate(state);
+		}
+	}
+	for (int i = 0; i < 4 * Nb; i++) {
+		out[i] = state[i % 4][i / 4];
+	}
+}
+
 
 void InvShiftRows(byte state[4][Nb]) {
 	byte temp[4][Nb];
